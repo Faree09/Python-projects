@@ -1,0 +1,112 @@
+# 🚀 New York Airbnb 2024 EDA Project
+
+# 📦 Setup
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Aesthetic settings
+sns.set(style="whitegrid")
+plt.rcParams['figure.figsize'] = (12, 6)
+
+# 🔍 Load Dataset
+df = pd.read_csv('datasets.csv')
+print("First 5 rows:")
+print(df.head())
+
+print("\nDataset Info:")
+print(df.info())
+
+# 📊 Basic Stats
+print("\nSummary Statistics:")
+print(df.describe())
+
+# 🔍 Missing Values
+print("\nMissing Values:")
+print(df.isnull().sum())
+
+# 💡 Handling Missing Values
+# Fill missing reviews_per_month with 0
+if 'reviews_per_month' in df.columns:
+    df['reviews_per_month'].fillna(0, inplace=True)
+
+# Drop rows missing critical data like 'name', 'price'
+df.dropna(subset=['name', 'price'], inplace=True)
+
+# 🚧 Remove Duplicates
+initial_shape = df.shape
+df.drop_duplicates(inplace=True)
+print(f"Removed {initial_shape[0] - df.shape[0]} duplicate rows.")
+
+# 🚧 Drop Rows with Any Remaining Null Values
+null_rows = df.isnull().sum().sum()
+df.dropna(inplace=True)
+print(f"Dropped {null_rows} rows with remaining null values.")
+
+# ⚠️ Outlier Removal – Price
+df = df[df['price'] <= 500]
+
+# ⚠️ Outlier Removal – Minimum Nights
+df = df[df['minimum_nights'] <= 30]
+
+# ⚠️ Outlier Removal – Availability
+df = df[df['availability_365'] > 0]
+
+# ⚡️ Confirm Final Dataset Shape
+print(f"Final dataset shape: {df.shape}")
+
+# 🔥 Correlation Heatmap
+plt.figure(figsize=(10, 8))
+sns.heatmap(df.corr(numeric_only=True), annot=True, cmap='coolwarm')
+plt.title('Correlation Heatmap')
+plt.show()
+
+# 📊 Univariate Analysis: Price Distribution
+sns.histplot(df['price'], bins=50, kde=True)
+plt.title('Price Distribution')
+plt.xlabel('Price ($)')
+plt.show()
+
+# 🗽 Neighbourhood Group Analysis
+if 'neighbourhood_group' in df.columns:
+    top_neigh = df['neighbourhood_group'].value_counts()
+    sns.barplot(x=top_neigh.index, y=top_neigh.values)
+    plt.title('Listings by Neighbourhood Group')
+    plt.xticks(rotation=45)
+    plt.ylabel('Number of Listings')
+    plt.show()
+
+# 🏠 Room Type Distribution
+if 'room_type' in df.columns:
+    sns.countplot(data=df, x='room_type')
+    plt.title('Room Type Distribution')
+    plt.show()
+
+# 📅 Availability Insights
+if 'availability_365' in df.columns and 'room_type' in df.columns:
+    sns.boxplot(data=df, x='room_type', y='availability_365')
+    plt.title('Availability by Room Type')
+    plt.show()
+
+# 💪 Feature Engineering – Price per Minimum Night
+df['price_per_night'] = df['price'] / df['minimum_nights']
+print("\nNew Column Added: price_per_night")
+
+# 📊 GroupBy – Average Price per Neighbourhood Group
+if 'neighbourhood_group' in df.columns:
+    avg_price = df.groupby('neighbourhood_group')['price'].mean().sort_values(ascending=False)
+    print("\nAverage Price per Neighbourhood Group:")
+    print(avg_price)
+
+# 📈 Bivariate Analysis – Price vs Reviews
+if 'number_of_reviews' in df.columns:
+    sns.scatterplot(data=df, x='number_of_reviews', y='price')
+    plt.title('Price vs Number of Reviews')
+    plt.xlim(0, 200)
+    plt.ylim(0, 500)
+    plt.show()
+
+# 🌟 Save cleaned dataset (optional)
+df.to_csv('datasets_cleaned.csv', index=False)
+print("\nCleaned dataset saved as datasets_cleaned.csv")
